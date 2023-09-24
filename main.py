@@ -21,7 +21,9 @@ def resolution_sort_key(resolution_string):
         return 0
 
 
-def fetch_resolutions(event=None):  # Added default value for event
+def fetch_resolutions(event=None):
+    fetching_label.config(text="Fetching resolutions...")
+    root.update_idletasks()
     url = url_entry.get()
     try:
         resolutions = get_resolutions(url)
@@ -30,6 +32,7 @@ def fetch_resolutions(event=None):  # Added default value for event
             resolution_combobox.current(0)
     except Exception as e:
         messagebox.showerror("Error", str(e))
+    fetching_label.config(text="Resolutions fetched!")
 
 
 def get_resolutions(url):
@@ -77,8 +80,14 @@ url_entry.insert(0, "Enter the YouTube video URL")
 url_entry.bind("<Button-1>", lambda e: url_entry.delete(0, tk.END))
 url_entry.bind("<Return>", fetch_resolutions)  # When Enter is pressed after typing the URL
 
+instruction_label = tk.Label(root, text="Press 'Enter' after entering the URL to fetch resolutions.")
+instruction_label.pack(pady=5)
+
 resolution_combobox = ttk.Combobox(root, state="readonly")
 resolution_combobox.pack(pady=10)
+
+fetching_label = tk.Label(root, text="")
+fetching_label.pack(pady=5)
 
 download_button = tk.Button(root, text="Download", command=download_and_combine)
 download_button.pack(pady=10)
