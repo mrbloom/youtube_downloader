@@ -1,8 +1,7 @@
 import tkinter as tk
-from tkinter import simpledialog, messagebox, ttk
+from tkinter import messagebox, ttk, scrolledtext
 from pytube import YouTube, Stream
 from moviepy.editor import VideoFileClip, AudioFileClip
-
 
 def progress(stream: Stream, chunk: bytes, bytes_remaining: int):
     current = stream.filesize - bytes_remaining
@@ -11,15 +10,8 @@ def progress(stream: Stream, chunk: bytes, bytes_remaining: int):
     root.update_idletasks()
 
     # Command line progress
-    print(f"\rProgress: {percentage:.2f}%", end="")
-
-
-def resolution_sort_key(resolution_string):
-    try:
-        return int(resolution_string.replace('p', ''))
-    except ValueError:
-        return 0
-
+    cmd_line.insert(tk.END, f"\rProgress: {percentage:.2f}%")
+    cmd_line.see(tk.END)
 
 def fetch_resolutions(event=None):
     fetching_label.config(text="Fetching resolutions...")
@@ -29,22 +21,23 @@ def fetch_resolutions(event=None):
         resolutions = get_resolutions(url)
         resolution_combobox["values"] = resolutions
         if resolutions:
-            resolution_combobox.current(0)
+            resolution_combobox.current(0)  # Automatically select the highest resolution
     except Exception as e:
         messagebox.showerror("Error", str(e))
     fetching_label.config(text="Resolutions fetched!")
-
+    cmd_line.insert(tk.END, "\nResolutions fetched.\n")
+    cmd_line.see(tk.END)
 
 def get_resolutions(url):
     yt = YouTube(url)
-    video_streams = yt.streams.filter(only_video=True, file_extension='mp4')
-    resolutions = list({stream.resolution for stream in video_streams})
-    resolutions.sort(key=resolution_sort_key)
+
+    # Fetch both video-only and combined streams, then extract unique resolutions
+    streams = yt.streams.filter(file_extension='mp4')
+    resolutions = sorted({stream.resolution for stream in streams if stream.resolution}, key=lambda x: -int(x.rstrip('p')))
+
     return resolutions
 
-
 def download_and_combine():
-    global blinking
     url = url_entry.get()
     selected_resolution = resolution_combobox.get()
 
@@ -68,8 +61,8 @@ def download_and_combine():
     final_clip = video.set_audio(audio)
     final_clip.write_videofile(f"{yt.title}.mp4")
 
-    print("\nDownload and merge completed!")
-
+    cmd_line.insert(tk.END, "\nDownload and merge completed!")
+    cmd_line.see(tk.END)
 
 root = tk.Tk()
 root.title("YouTube Downloader")
@@ -95,7 +88,10 @@ download_button.pack(pady=10)
 progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=400)
 progress_bar.pack(pady=20)
 
-status_label = tk.Label(root, text="", bd=1, relief="solid", anchor="w")
-status_label.pack(pady=20, fill=tk.X)
+# Command line display
+cmd_line = scrolledtext.ScrolledText(root, undo=True, wrap=tk.WORD, width=50, height=5)
+cmd_line.pack(pady=20, fill=tk.BOTH, expand=True)
+cmd_line.config(font='TkFixedFont')
+cmd_line.insert(tk.END, "Command line output:\n")
 
 root.mainloop()
