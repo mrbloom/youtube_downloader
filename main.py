@@ -20,6 +20,15 @@ def set_local_ffmpeg_binary():
 if not is_ffmpeg_installed():
     set_local_ffmpeg_binary()
 
+def paste_from_clipboard(event):
+    """ Handle paste operation from the clipboard """
+    try:
+        text = event.widget.clipboard_get()
+        event.widget.insert(tk.INSERT, text)
+    except tk.TclError:
+        pass  # Do nothing if clipboard is empty or contains non-text data
+
+
 
 def fetch_resolutions(url):
     yt = YouTube(url)
@@ -81,10 +90,10 @@ root.title("YouTube Downloader")
 
 url_entry = tk.Entry(root, width=50)
 url_entry.pack(pady=20)
+url_entry.bind("<Control-v>", paste_from_clipboard)  # Bind Ctrl+V to paste function
 
 fetch_resolutions_button = tk.Button(root, text="Fetch Resolutions",
-                                     command=lambda: on_fetch_resolutions_button_clicked(url_entry,
-                                                                                         resolution_combobox))
+                                     command=lambda: on_fetch_resolutions_button_clicked(url_entry, resolution_combobox))
 fetch_resolutions_button.pack(pady=5)
 
 resolution_combobox = ttk.Combobox(root, state="readonly")
