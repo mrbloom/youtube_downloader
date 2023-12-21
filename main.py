@@ -66,6 +66,7 @@ def cleanup_files(video_filename, audio_filename):
 def download_and_combine(url, resolution):
     try:
         video_filename, audio_filename, title = download_video(url, resolution)
+        title = title.replace(":", "")
         combine_video_audio(video_filename, audio_filename, title)
         cleanup_files(video_filename, audio_filename)
         messagebox.showinfo("Success", "Download and merge completed!")
