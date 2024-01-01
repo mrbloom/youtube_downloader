@@ -62,11 +62,27 @@ def cleanup_files(video_filename, audio_filename):
     os.remove(video_filename)
     os.remove(audio_filename)
 
+def sanitize_filename(filename):
+    """
+    Sanitize a string to be used as a Windows filename.
+
+    :param filename: The original filename string.
+    :return: A sanitized filename string.
+    """
+    # Windows filename forbidden characters: \/:*?"<>|
+    forbidden_chars = '<>:"/\\|?*'
+
+    # Replace each forbidden character with an underscore
+    for char in forbidden_chars:
+        filename = filename.replace(char, '_')
+
+    return filename
+
 
 def download_and_combine(url, resolution):
     try:
         video_filename, audio_filename, title = download_video(url, resolution)
-        title = title.replace(":", "")
+        title = sanitize_filename(title)
         combine_video_audio(video_filename, audio_filename, title)
         cleanup_files(video_filename, audio_filename)
         messagebox.showinfo("Success", "Download and merge completed!")
