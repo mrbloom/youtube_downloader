@@ -80,12 +80,20 @@ def sanitize_filename(filename):
     return filename
 
 
-def download_and_combine(url, resolution):
+def download_and_combine(url, resolution, keep_audio=False):
     try:
         video_filename, audio_filename, title = download_video(url, resolution)
         title = sanitize_filename(title)
         combine_video_audio(video_filename, audio_filename, title)
-        cleanup_files(video_filename, audio_filename)
+
+        # Adjust cleanup based on keep_audio
+        os.remove(video_filename)  # Always remove video temp file
+        if keep_audio:
+            sanitized_audio_filename = f"{title}.mp3"
+            os.rename(audio_filename, sanitized_audio_filename)
+        else:
+            os.remove(audio_filename)
+
         messagebox.showinfo("Success", "Download and merge completed!")
     except Exception as e:
         messagebox.showerror("Error", str(e))
@@ -117,8 +125,18 @@ fetch_resolutions_button.pack(pady=5)
 resolution_combobox = ttk.Combobox(root, state="readonly")
 resolution_combobox.pack(pady=10)
 
+# Create a variable to track the checkbox state
+keep_audio_var = tk.IntVar(value=1)  # Default is not to keep
+
+# Add a checkbox to the GUI
+keep_audio_checkbox = tk.Checkbutton(root, text="Keep audio file separately", variable=keep_audio_var)
+keep_audio_checkbox.pack()
+
+
 download_button = tk.Button(root, text="Download",
-                            command=lambda: download_and_combine(url_entry.get(), resolution_combobox.get()))
+                            command=lambda: download_and_combine(url_entry.get(), resolution_combobox.get(),
+                            keep_audio_var.get()))
+
 download_button.pack(pady=10)
 
 root.mainloop()
