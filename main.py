@@ -25,6 +25,7 @@ def paste_from_clipboard(event):
     try:
         text = event.widget.clipboard_get()
         event.widget.insert(tk.INSERT, text)
+        return "break"
     except tk.TclError:
         pass  # Do nothing if clipboard is empty or contains non-text data
 
