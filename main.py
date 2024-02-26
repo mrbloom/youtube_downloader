@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 import tkinter as tk
 from tkinter import messagebox, ttk
 from pytube import YouTube
@@ -54,9 +55,25 @@ def download_video(url, resolution):
 
 
 def combine_video_audio(video_filename, audio_filename, title):
-    with VideoFileClip(video_filename) as video, AudioFileClip(audio_filename) as audio:
-        final_clip = video.set_audio(audio)
-        final_clip.write_videofile(f"{title}.mp4")
+    output_filename = f"{title}.mp4"
+    # Command to combine video and audio with FFmpeg
+    command = [
+        'ffmpeg',
+        '-i', video_filename,
+        '-i', audio_filename,
+        '-c:v', 'copy',  # Copy the video stream
+        '-c:a', 'copy',  # Convert audio to AAC
+        '-strict', 'experimental',
+        output_filename
+    ]
+    try:
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error during combining video and audio: {e}")
+        raise
+    # with VideoFileClip(video_filename) as video, AudioFileClip(audio_filename) as audio:
+    #     final_clip = video.set_audio(audio)
+    #     final_clip.write_videofile(f"{title}.mp4")
 
 
 def cleanup_files(video_filename, audio_filename):
@@ -84,6 +101,10 @@ def download_and_combine(url, resolution, keep_audio=False):
     try:
         video_filename, audio_filename, title = download_video(url, resolution)
         title = sanitize_filename(title)
+        # if keep_audio:
+        #     sanitized_video_filename = f"{title}_audioless.mp4"
+        #     shutil.copy(video_filename, sanitized_video_filename)
+
         combine_video_audio(video_filename, audio_filename, title)
 
         # Adjust cleanup based on keep_audio
@@ -113,6 +134,10 @@ def on_fetch_resolutions_button_clicked(url_entry, resolution_combobox):
 # GUI Setup
 root = tk.Tk()
 root.title("YouTube Downloader")
+
+# Create a label widget with descriptive text
+label = tk.Label(root, text="Insert YouTube URL")
+label.pack(pady=(10, 0))  # Add some padding above the label
 
 url_entry = tk.Entry(root, width=50)
 url_entry.pack(pady=20)
