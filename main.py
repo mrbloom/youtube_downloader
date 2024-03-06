@@ -1,10 +1,10 @@
+import datetime
 import os
 import shutil
 import subprocess
 import tkinter as tk
 from tkinter import messagebox, ttk
 from pytube import YouTube
-from moviepy.editor import VideoFileClip, AudioFileClip
 from moviepy.config import change_settings
 
 def is_ffmpeg_installed():
@@ -42,14 +42,20 @@ def fetch_resolutions(url):
 
 def download_video(url, resolution):
     yt = YouTube(url)
+
     video_stream = yt.streams.filter(only_video=True, resolution=resolution, file_extension='mp4').first()
     audio_stream = yt.streams.filter(only_audio=True, file_extension='mp4').first()
 
     if not video_stream or not audio_stream:
         raise RuntimeError("Suitable streams not found.")
 
-    video_filename = video_stream.download(filename="video_temp")
-    audio_filename = audio_stream.download(filename="audio_temp")
+    # Get the current date and time
+    now = datetime.datetime.now()
+    # Format the date and time as YYYYMMDDhhmmss
+    formatted_date = now.strftime("%Y%m%d%H%M%S")
+
+    video_filename = video_stream.download(filename=f"video_temp_{formatted_date}")
+    audio_filename = audio_stream.download(filename=f"audio_temp_{formatted_date}")
 
     return video_filename, audio_filename, yt.title
 
@@ -107,6 +113,10 @@ def download_and_combine(url, resolution, keep_audio=False):
 
         combine_video_audio(video_filename, audio_filename, title)
 
+        # Download subtitles
+        yt = YouTube(url)  # You might already have this object; if so, no need to create it again
+        download_subtitles(yt, title)
+
         # Adjust cleanup based on keep_audio
         os.remove(video_filename)  # Always remove video temp file
         if keep_audio:
@@ -130,6 +140,21 @@ def on_fetch_resolutions_button_clicked(url_entry, resolution_combobox):
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
+def download_subtitles(yt, title):
+    """
+    Download subtitles for a video if available and save them as a .srt file.
+    """
+    # Check if there are captions available
+    captions = yt.captions.get_by_language_code('en')
+    if captions:
+        # Download and save the subtitles as a .srt file
+        subtitles_filename = f"{title}.srt"
+        with open(subtitles_filename, "w", encoding="utf-8") as f:
+            f.write(captions.generate_srt_captions())
+        print(f"Subtitles saved: {subtitles_filename}")
+    else:
+        print("No English subtitles available.")
+
 
 # GUI Setup
 root = tk.Tk()
@@ -142,6 +167,7 @@ label.pack(pady=(10, 0))  # Add some padding above the label
 url_entry = tk.Entry(root, width=50)
 url_entry.pack(pady=20)
 url_entry.bind("<Control-v>", paste_from_clipboard)  # Bind Ctrl+V to paste function
+
 
 fetch_resolutions_button = tk.Button(root, text="Fetch Resolutions",
                                      command=lambda: on_fetch_resolutions_button_clicked(url_entry, resolution_combobox))
@@ -163,5 +189,7 @@ download_button = tk.Button(root, text="Download",
                             keep_audio_var.get()))
 
 download_button.pack(pady=10)
+
+
 
 root.mainloop()
